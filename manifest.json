@@ -1,10 +1,10 @@
 {
 	"id": "arxiv-assistant",
 	"name": "Arxiv Assistant",
-	"version": "1.0.0",
+	"version": "0.0.1",
 	"minAppVersion": "0.15.0",
 	"description": "Arxiv paper management assistant with metadata fetching, PDF downloading, and AI-powered summarization features",
-	"author": "Your Name",
-	"authorUrl": "https://github.com/yourusername",
+	"author": "Puer-Hyun",
+	"authorUrl": "https://github.com/Puer-Hyun",
 	"isDesktopOnly": true
 }
