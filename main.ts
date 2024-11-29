@@ -1,4 +1,5 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, TFile } from 'obsidian';
+import { PDFExtractor } from './src/pdfExtractor';
 
 // Remember to rename these classes and interfaces!
 
@@ -12,9 +13,11 @@ const DEFAULT_SETTINGS: MyPluginSettings = {
 
 export default class MyPlugin extends Plugin {
 	settings: MyPluginSettings;
+	pdfExtractor: PDFExtractor;
 
 	async onload() {
 		await this.loadSettings();
+		this.pdfExtractor = new PDFExtractor();
 
 		// This creates an icon in the left ribbon.
 		const ribbonIconEl = this.addRibbonIcon('dice', 'Sample Plugin', (evt: MouseEvent) => {
@@ -76,6 +79,52 @@ export default class MyPlugin extends Plugin {
 
 		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
 		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
+
+		// PDF 텍스트 추출 명령어 수정
+		this.addCommand({
+			id: 'get-text-from-pdf',
+			name: 'Get Text From PDF',
+			callback: async () => {
+				try {
+					const filePath = '2404.16260v1.pdf';  // vault 루트의 PDF 파일
+					const file = this.app.vault.getAbstractFileByPath(filePath);
+					
+					if (!file) {
+						new Notice('PDF 파일을 찾을 수 없습니다.');
+						return;
+					}
+
+					// TFile 타입 체크
+					if (file instanceof TFile) {
+						const arrayBuffer = await this.app.vault.readBinary(file);
+						const extractedText = await this.pdfExtractor.extractTextFromPDF(arrayBuffer);
+						
+						// 새로운 마크다운 파일 이름
+						const newFileName = '2404.16260v1-extracted.md';
+						
+						// 기존 파일 존재 여부 확인
+						const existingFile = this.app.vault.getAbstractFileByPath(newFileName);
+						if (existingFile) {
+							// 기존 파일이 있으면 수정
+							await this.app.vault.modify(existingFile as TFile, extractedText);
+							new Notice('기존 파일이 업데이트되었습니다.');
+						} else {
+							// 새 파일 생성
+							await this.app.vault.create(newFileName, extractedText);
+							new Notice('새 파일이 생성되었습니다.');
+						}
+						
+						// 디버깅용 로그
+						console.log('추출된 텍스트:', extractedText);
+					} else {
+						new Notice('유효하지 않은 파일입니다.');
+					}
+				} catch (error) {
+					new Notice('PDF 처리 중 오류가 발생했습니다.');
+					console.error('PDF 처리 오류:', error);
+				}
+			}
+		});
 	}
 
 	onunload() {
