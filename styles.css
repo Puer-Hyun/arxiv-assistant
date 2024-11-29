@@ -8,5 +8,39 @@ If your plugin does not need CSS, delete this file.
 */
 
 .arxiv-assistant-ribbon-class {
-    /* ... */
+    opacity: 0.8;
+}
+
+.arxiv-summarization-loading {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background-color: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 5px;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    z-index: 1000;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.arxiv-summarization-loading .spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--text-muted);
+    border-top: 2px solid var(--text-normal);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-right: 10px;
+}
+
+.arxiv-summarization-loading .message {
+    color: var(--text-normal);
+    font-size: 14px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
