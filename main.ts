@@ -1,8 +1,9 @@
 import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, TFile } from 'obsidian';
-import { PDFExtractor } from './src/pdfExtractor';
+import { PDFExtractor } from './src/services/pdfExtractor';
 import { ArxivMetadataService } from './src/services/arxivMetadataService';
 import { PDFDownloadService } from './src/services/pdfDownloadService';
 import { PluginSettings, DEFAULT_SETTINGS } from './src/types/settings';
+import { SummaryService } from './src/services/summaryService';
 
 // Remember to rename these classes and interfaces!
 
@@ -11,12 +12,14 @@ export default class MyPlugin extends Plugin {
 	pdfExtractor: PDFExtractor;
 	arxivMetadataService: ArxivMetadataService;
 	pdfDownloadService: PDFDownloadService;
+	summaryService: SummaryService;
 
 	async onload() {
 		await this.loadSettings();
 		this.pdfExtractor = new PDFExtractor();
 		this.arxivMetadataService = new ArxivMetadataService(this.app);
 		this.pdfDownloadService = new PDFDownloadService(this.app, this.settings);
+		this.summaryService = new SummaryService(this.app, this.settings);
 
 		// This creates an icon in the left ribbon.
 		const ribbonIconEl = this.addRibbonIcon('dice', 'Sample Plugin', (evt: MouseEvent) => {
@@ -140,6 +143,15 @@ export default class MyPlugin extends Plugin {
 			name: 'Arxiv PDF 다운로드',
 			callback: () => {
 				this.pdfDownloadService.downloadFromClipboard();
+			}
+		});
+
+		// 요약 명령어 추가
+		this.addCommand({
+			id: 'summarize-arxiv-paper',
+			name: 'Arxiv 논문 요약하기',
+			callback: () => {
+				this.summaryService.summarizeFromClipboard();
 			}
 		});
 	}

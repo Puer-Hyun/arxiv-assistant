@@ -61,4 +61,23 @@ export class PDFDownloadService {
         new Notice(`논문이 다운로드되었습니다: ${pdfRelativePath}`);
         return pdfRelativePath;
     }
+
+    async getPDFContent(url: string): Promise<ArrayBuffer> {
+        const arxivId = extractArxivId(url);
+        if (!arxivId) {
+            throw new Error('유효한 ArXiv ID를 찾을 수 없습니다.');
+        }
+
+        const pdfUrl = `https://arxiv.org/pdf/${arxivId}.pdf`;
+        const response = await requestUrl({ 
+            url: pdfUrl, 
+            method: 'GET' 
+        });
+
+        if (response.status !== 200) {
+            throw new Error(`PDF 다운로드 실패: ${response.status}`);
+        }
+
+        return response.arrayBuffer;
+    }
 } 
