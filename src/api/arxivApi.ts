@@ -6,7 +6,7 @@ export class ArxivApi {
     async fetchArxivMetadata(url: string): Promise<ArxivMetadataType> {
         const arxivId = extractArxivId(url);
         if (!arxivId) {
-            throw new Error('유효한 Arxiv URL이 아닙니다.');
+            throw new Error('Invalid Arxiv URL');
         }
 
         const apiUrl = `https://export.arxiv.org/api/query?id_list=${arxivId}`;
@@ -19,7 +19,7 @@ export class ArxivApi {
         });
 
         if (response.status !== 200) {
-            throw new Error(`Arxiv API 요청 실패: ${response.status}`);
+            throw new Error(`Arxiv API request failed: ${response.status}`);
         }
 
         return this.parseArxivResponse(response.text);
@@ -58,17 +58,17 @@ export class ArxivApi {
 
         const entry = xmlDoc.querySelector('entry');
         if (!entry) {
-            throw new Error('논문 정보를 찾을 수 없습니다.');
+            throw new Error('Paper information not found');
         }
 
         return {
-            title: entry.querySelector('title')?.textContent?.trim() || '제목 없음',
+            title: entry.querySelector('title')?.textContent?.trim() || 'No title',
             paperLink: entry.querySelector('id')?.textContent || '',
-            publishDate: entry.querySelector('published')?.textContent?.split('T')[0] || '날짜 없음',
+            publishDate: entry.querySelector('published')?.textContent?.split('T')[0] || 'No date',
             authors: Array.from(entry.querySelectorAll('author name'))
                 .map(author => author.textContent)
                 .join(', '),
-            abstract: this.formatAbstract(entry.querySelector('summary')?.textContent || 'Abstract 없음')
+            abstract: this.formatAbstract(entry.querySelector('summary')?.textContent || 'No abstract available')
         };
     }
 

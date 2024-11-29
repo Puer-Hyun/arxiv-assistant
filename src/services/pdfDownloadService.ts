@@ -17,29 +17,29 @@ export class PDFDownloadService {
             const url = normalizeArxivUrl(clipboardText.trim());
             
             if (!isValidArxivUrl(url)) {
-                throw new Error('클립보드의 내용이 유효한 Arxiv URL이 아닙니다.');
+                throw new Error('Invalid Arxiv URL in clipboard');
             }
 
             await this.downloadPDF(url);
             
         } catch (error) {
-            new Notice('PDF 다운로드 중 오류가 발생했습니다: ' + error.message);
-            console.error('PDF 다운로드 오류:', error);
+            new Notice('PDF download failed: ' + error.message);
+            console.error('PDF download error:', error);
         }
     }
 
     private async downloadPDF(url: string) {
         const arxivId = extractArxivId(url);
         if (!arxivId) {
-            throw new Error('유효한 ArXiv ID를 찾을 수 없습니다.');
+            throw new Error('Could not find valid ArXiv ID');
         }
 
         const paperPath = this.settings.paperPaths.trim();
         if (!paperPath) {
-            throw new Error('Paper download path가 설정되지 않았습니다.');
+            throw new Error('Paper download path is not configured');
         }
 
-        // PDF 다운로드
+        // PDF download
         const pdfUrl = `https://arxiv.org/pdf/${arxivId}.pdf`;
         const response = await requestUrl({ 
             url: pdfUrl, 
@@ -47,25 +47,25 @@ export class PDFDownloadService {
         });
 
         if (response.status !== 200) {
-            throw new Error(`PDF 다운로드 실패: ${response.status}`);
+            throw new Error(`PDF download failed: ${response.status}`);
         }
 
-        // 디렉토리 생성
+        // Create directory
         await this.app.vault.adapter.mkdir(paperPath);
 
-        // PDF 파일 저장
+        // Save PDF file
         const pdfFileName = `${arxivId}.pdf`;
         const pdfRelativePath = `${paperPath}/${pdfFileName}`;
         await this.app.vault.adapter.writeBinary(pdfRelativePath, response.arrayBuffer);
         
-        new Notice(`논문이 다운로드되었습니다: ${pdfRelativePath}`);
+        new Notice(`Paper downloaded: ${pdfRelativePath}`);
         return pdfRelativePath;
     }
 
     async getPDFContent(url: string): Promise<ArrayBuffer> {
         const arxivId = extractArxivId(url);
         if (!arxivId) {
-            throw new Error('유효한 ArXiv ID를 찾을 수 없습니다.');
+            throw new Error('Could not find valid ArXiv ID');
         }
 
         const pdfUrl = `https://arxiv.org/pdf/${arxivId}.pdf`;
@@ -75,7 +75,7 @@ export class PDFDownloadService {
         });
 
         if (response.status !== 200) {
-            throw new Error(`PDF 다운로드 실패: ${response.status}`);
+            throw new Error(`PDF download failed: ${response.status}`);
         }
 
         return response.arrayBuffer;

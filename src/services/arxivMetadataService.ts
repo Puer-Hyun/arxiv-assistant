@@ -21,21 +21,21 @@ export class ArxivMetadataService {
             const url = normalizeArxivUrl(clipboardText.trim());
             
             if (!isValidArxivUrl(url)) {
-                throw new Error('클립보드의 내용이 유효한 Arxiv URL이 아닙니다.');
+                throw new Error('The content in the clipboard is not a valid Arxiv URL.');
             }
 
             let activeFile = this.app.workspace.getActiveFile();
             if (!activeFile) {
                 const fileName = `Arxiv Paper - ${new Date().toISOString().split('T')[0]}.md`;
                 activeFile = await this.app.vault.create(fileName, "");
-                new Notice(`새 파일이 생성되었습니다: ${fileName}`);
+                new Notice(`A new file has been created: ${fileName}`);
             }
 
             const metadata = await this.arxivApi.fetchArxivMetadata(url);
             await this.insertMetadata(metadata, activeFile);
-            new Notice('메타데이터가 성공적으로 삽입되었습니다.');
+            new Notice('Metadata has been successfully inserted.');
         } catch (error) {
-            new Notice('오류: ' + error.message);
+            new Notice('Error: ' + error.message);
         }
     }
 
@@ -44,7 +44,7 @@ export class ArxivMetadataService {
             // @ts-ignore
             const metaedit = this.app.plugins.plugins['metaedit'];
             if (!metaedit) {
-                new Notice('metaedit 플러그인이 설치되어 있지 않습니다.');
+                new Notice('metaedit plugin is not installed');
                 return;
             }
 
@@ -57,8 +57,8 @@ export class ArxivMetadataService {
             }).open();
 
         } catch (error) {
-            console.error('메타데이터 삽입 오류:', error);
-            new Notice('메타데이터 삽입 중 오류가 발생했습니다.');
+            console.error('Error inserting metadata:', error);
+            new Notice('An error occurred during metadata insertion.');
         }
     }
 
@@ -123,7 +123,7 @@ export class ArxivMetadataService {
                     content += papers.map(paper => `- ${paper.title}\n`).join('');
                 }
             } else {
-                content += '정보가 없습니다.\n';
+                content += 'No information available.\n';
             }
         }
         return content;
@@ -131,7 +131,7 @@ export class ArxivMetadataService {
 
     private async createLinksToInfluentialPapers(papers: any[], currentFile: TFile): Promise<string> {
         if (!papers || papers.length === 0) {
-            return '정보가 없습니다.\n';
+            return 'No information available.\n';
         }
 
         let links = '';
@@ -163,10 +163,10 @@ export class ArxivMetadataService {
 
         try {
             await this.app.fileManager.renameFile(file, newPath);
-            new Notice(`파일 이름이 변경되었습니다: ${sanitizedTitle}`);
+            new Notice('File name has been updated');
         } catch (error) {
-            console.error('파일 이름 변경 오류:', error);
-            new Notice('파일 이름 변경 중 오류가 발생했습니다.');
+            console.error('Error updating file name:', error);
+            new Notice('An error occurred during file name update.');
         }
     }
 } 

@@ -11,10 +11,10 @@ export class CreateRelatedPapersModal extends Modal {
     onOpen() {
         const {contentEl} = this;
 
-        contentEl.createEl("h1", {text: "관련 논문 파일 생성"});
+        contentEl.createEl("h1", {text: "Create Related Paper Files"});
 
         new Setting(contentEl)
-            .setName("연관된 인용 논문들을 새로운 파일로 작성하시겠습니까?")
+            .setName("Would you like to create new files for related papers?")
             .addButton((btn) =>
                 btn
                     .setButtonText("Yes")

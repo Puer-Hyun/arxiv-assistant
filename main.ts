@@ -31,11 +31,11 @@ export default class ArxivAssistantPlugin extends Plugin {
 			name: 'Get Text From PDF',
 			callback: async () => {
 				try {
-					const filePath = '2404.16260v1.pdf';  // vault 루트의 PDF 파일
+					const filePath = '2404.16260v1.pdf';  // PDF file in vault root
 					const file = this.app.vault.getAbstractFileByPath(filePath);
 					
 					if (!file) {
-						new Notice('PDF 파일을 찾을 수 없습니다.');
+						new Notice('PDF file not found');
 						return;
 					}
 
@@ -48,17 +48,17 @@ export default class ArxivAssistantPlugin extends Plugin {
 						
 						if (existingFile) {
 							await this.app.vault.modify(existingFile as TFile, extractedText);
-							new Notice('기존 파일이 업데이트되었습니다.');
+							new Notice('Existing file has been updated');
 						} else {
 							await this.app.vault.create(newFileName, extractedText);
-							new Notice('새 파일이 생성되었습니다.');
+							new Notice('New file has been created');
 						}
 					} else {
-						new Notice('유효하지 않은 파일입니다.');
+						new Notice('Invalid file');
 					}
 				} catch (error) {
-					new Notice('PDF 처리 중 오류가 발생했습니다.');
-					console.error('PDF 처리 오류:', error);
+					new Notice('Error processing PDF');
+					console.error('PDF processing error:', error);
 				}
 			}
 		});
@@ -66,7 +66,7 @@ export default class ArxivAssistantPlugin extends Plugin {
 		// Arxiv 메타데이터 명령어
 		this.addCommand({
 			id: 'fetch-arxiv-metadata',
-			name: 'Arxiv 메타데이터 가져오기',
+			name: 'Get Arxiv Metadata',
 			callback: () => {
 				this.arxivMetadataService.fetchMetadataFromClipboard();
 			}
@@ -75,7 +75,7 @@ export default class ArxivAssistantPlugin extends Plugin {
 		// PDF 다운로드 명령어
 		this.addCommand({
 			id: 'download-arxiv-pdf',
-			name: 'Arxiv PDF 다운로드',
+			name: 'Download Arxiv PDF',
 			callback: () => {
 				this.pdfDownloadService.downloadFromClipboard();
 			}
@@ -84,7 +84,7 @@ export default class ArxivAssistantPlugin extends Plugin {
 		// 요약 명령어
 		this.addCommand({
 			id: 'summarize-arxiv-paper',
-			name: 'Arxiv 논문 요약하기',
+			name: 'Summarize Arxiv Paper',
 			callback: () => {
 				this.summaryService.summarizeFromClipboard();
 			}

@@ -4,7 +4,7 @@ import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
 
 export class PDFExtractor {
     constructor() {
-        // PDF.js 워커 설정
+        // PDF.js worker setup
         GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.9.179/pdf.worker.min.js`;
     }
 
@@ -21,7 +21,7 @@ export class PDFExtractor {
             const pdf = await loadingTask.promise;
             let fullText = '';
             
-            // 모든 페이지의 텍스트 추출
+            // Extract text from all pages
             for (let i = 1; i <= pdf.numPages; i++) {
                 const page = await pdf.getPage(i);
                 const textContent = await page.getTextContent();
@@ -34,8 +34,8 @@ export class PDFExtractor {
 
             return fullText;
         } catch (error) {
-            new Notice('PDF 텍스트 추출 중 오류가 발생했습니다.');
-            console.error('PDF 추출 오류:', error);
+            new Notice('Error extracting text from PDF');
+            console.error('PDF extraction error:', error);
             throw error;
         }
     }

@@ -9,5 +9,5 @@ export const DEFAULT_SETTINGS: PluginSettings = {
     geminiApiKey: '',
     paperPaths: '',
     translate: false,
-    targetLanguage: '한국어'
+    targetLanguage: 'korean'
 } 
