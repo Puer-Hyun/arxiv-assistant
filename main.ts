@@ -1,26 +1,22 @@
 import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, TFile } from 'obsidian';
 import { PDFExtractor } from './src/pdfExtractor';
 import { ArxivMetadataService } from './src/services/arxivMetadataService';
+import { PDFDownloadService } from './src/services/pdfDownloadService';
+import { PluginSettings, DEFAULT_SETTINGS } from './src/types/settings';
 
 // Remember to rename these classes and interfaces!
 
-interface MyPluginSettings {
-	mySetting: string;
-}
-
-const DEFAULT_SETTINGS: MyPluginSettings = {
-	mySetting: 'default'
-}
-
 export default class MyPlugin extends Plugin {
-	settings: MyPluginSettings;
+	settings: PluginSettings;
 	pdfExtractor: PDFExtractor;
 	arxivMetadataService: ArxivMetadataService;
+	pdfDownloadService: PDFDownloadService;
 
 	async onload() {
 		await this.loadSettings();
 		this.pdfExtractor = new PDFExtractor();
 		this.arxivMetadataService = new ArxivMetadataService(this.app);
+		this.pdfDownloadService = new PDFDownloadService(this.app, this.settings);
 
 		// This creates an icon in the left ribbon.
 		const ribbonIconEl = this.addRibbonIcon('dice', 'Sample Plugin', (evt: MouseEvent) => {
@@ -137,6 +133,15 @@ export default class MyPlugin extends Plugin {
 				this.arxivMetadataService.fetchMetadataFromClipboard();
 			}
 		});
+
+		// PDF 다운로드 명령어 추가
+		this.addCommand({
+			id: 'download-arxiv-pdf',
+			name: 'Arxiv PDF 다운로드',
+			callback: () => {
+				this.pdfDownloadService.downloadFromClipboard();
+			}
+		});
 	}
 
 	onunload() {
@@ -182,14 +187,51 @@ class SampleSettingTab extends PluginSettingTab {
 		containerEl.empty();
 
 		new Setting(containerEl)
-			.setName('Setting #1')
-			.setDesc('It\'s a secret')
+			.setName('Paper Download Paths')
+			.setDesc('Specify the paths to download papers')
 			.addText(text => text
-				.setPlaceholder('Enter your secret')
-				.setValue(this.plugin.settings.mySetting)
+				.setPlaceholder('path/to/papers')
+				.setValue(this.plugin.settings.paperPaths)
 				.onChange(async (value) => {
-					this.plugin.settings.mySetting = value;
+					this.plugin.settings.paperPaths = value;
 					await this.plugin.saveSettings();
 				}));
+
+		new Setting(containerEl)
+			.setName('Gemini API Key')
+			.setDesc('Enter your Gemini API key')
+			.addText(text => text
+				.setPlaceholder('Enter your API key')
+				.setValue(this.plugin.settings.geminiApiKey)
+				.onChange(async (value) => {
+					this.plugin.settings.geminiApiKey = value;
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
+			.setName('Translate')
+			.setDesc('Translate the summary')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.translate)
+				.onChange(async (value) => {
+					this.plugin.settings.translate = value;
+					await this.plugin.saveSettings();
+					this.display();
+				}));
+
+		if (this.plugin.settings.translate) {
+			new Setting(containerEl)
+				.setName('Target Language')
+				.setDesc('Select the language to translate to')
+				.addDropdown(dropdown => dropdown
+					.addOption('korean', '한국어')
+					.addOption('japanese', '日本語')
+					.addOption('chinese', '中文')
+					.setValue(this.plugin.settings.targetLanguage)
+					.onChange(async (value) => {
+						this.plugin.settings.targetLanguage = value;
+						await this.plugin.saveSettings();
+					}));
+		}
 	}
 }

@@ -1,11 +1,11 @@
 {
-	"id": "sample-plugin",
-	"name": "Sample Plugin",
+	"id": "obisidan-arxiv-assistant",
+	"name": "Obisidan Arxiv Assistant",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
-	"description": "Demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
+	"description": "Obisidan Arxiv Assistant",
+	"author": "Puer-Hyun",
+	"authorUrl": "https://obisidan.com",
+	"fundingUrl": "https://obisidan.com/pricing",
 	"isDesktopOnly": false
 }
