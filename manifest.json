@@ -1,11 +1,10 @@
 {
-	"id": "obisidan-arxiv-assistant",
-	"name": "Obisidan Arxiv Assistant",
+	"id": "arxiv-assistant",
+	"name": "Arxiv Assistant",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
-	"description": "Obisidan Arxiv Assistant",
-	"author": "Puer-Hyun",
-	"authorUrl": "https://obisidan.com",
-	"fundingUrl": "https://obisidan.com/pricing",
-	"isDesktopOnly": false
+	"description": "Arxiv paper management assistant with metadata fetching, PDF downloading, and AI-powered summarization features",
+	"author": "Your Name",
+	"authorUrl": "https://github.com/yourusername",
+	"isDesktopOnly": true
 }

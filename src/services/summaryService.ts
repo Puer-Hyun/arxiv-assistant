@@ -3,16 +3,52 @@ import { normalizeArxivUrl, isValidArxivUrl } from '../utils/urlUtils';
 import { PluginSettings } from '../types/settings';
 import { PDFDownloadService } from './pdfDownloadService';
 import { PDFExtractor } from './pdfExtractor';
+import { PromptInputModal } from '../components/PromptInputModal';
 
 export class SummaryService {
     private app: App;
     private settings: PluginSettings;
     private pdfDownloadService: PDFDownloadService;
+    private loadingIndicator: HTMLElement | null = null;
+
+    private readonly DEFAULT_PROMPT = `You are a deep learning expert. You have received summaries of multiple pages from a long document. You need to create a comprehensive final summary based on these summaries. Please follow these steps:
+
+        Step 1: Extract key keywords and technical terms from all summaries. Bold each keyword and add a brief explanation.
+        Step 2: List the main points from all summaries. Include relevant keywords for each point.
+        Step 3: Elaborate on each point in 5-10 sentences. Use the extracted keywords in your explanations.
+        Step 4: Explain the relationships or connections between the points. Use keywords here as well.
+        Step 5: Briefly discuss the importance or potential impact of this information. Mention why the key keywords are important.
+
+        The final summary should faithfully reflect the essence of the entire document while being easy to read and informative.
+        Avoid vague or general statements and provide specific, substantial information.
+        Be sure to include and emphasize specific terms and content cited from other papers!
+        Bold these keywords and add a brief explanation if possible.
+        At the end of the summary, list all the main keywords once again.`;
 
     constructor(app: App, settings: PluginSettings) {
         this.app = app;
         this.settings = settings;
         this.pdfDownloadService = new PDFDownloadService(app, settings);
+    }
+
+    private showLoadingIndicator() {
+        if (this.loadingIndicator) return;
+        
+        this.loadingIndicator = document.createElement('div');
+        this.loadingIndicator.addClass('arxiv-summarization-loading');
+        
+        const spinner = this.loadingIndicator.createDiv('spinner');
+        const message = this.loadingIndicator.createDiv('message');
+        message.setText('Summarizing paper...');
+        
+        document.body.appendChild(this.loadingIndicator);
+    }
+
+    private hideLoadingIndicator() {
+        if (this.loadingIndicator) {
+            this.loadingIndicator.remove();
+            this.loadingIndicator = null;
+        }
     }
 
     async summarizeFromClipboard() {
@@ -29,20 +65,37 @@ export class SummaryService {
                 throw new Error('활성화된 마크다운 파일이 없습니다.');
             }
 
-            // PDF 다운로드 및 텍스트 추출
-            const pdfContent = await this.pdfDownloadService.getPDFContent(url);
-            const extractedText = await this.extractTextFromPDF(pdfContent);
-            
-            // Gemini API를 사용하여 요약
-            const summary = await this.summarizeWithGemini(extractedText);
-            
-            // 요약문 삽입
-            await this.insertSummary(summary, activeFile);
-            new Notice('요약이 성공적으로 삽입되었습니다.');
+            // 프롬프트 입력 모달 표시
+            await new Promise<void>((resolve) => {
+                new PromptInputModal(this.app, this.DEFAULT_PROMPT, async (customPrompt) => {
+                    try {
+                        this.showLoadingIndicator();  // 로딩 인디케이터 표시
+
+                        // PDF 다운로드 및 텍스트 추출
+                        const pdfContent = await this.pdfDownloadService.getPDFContent(url);
+                        const extractedText = await this.extractTextFromPDF(pdfContent);
+                        
+                        // Gemini API를 사용하여 요약
+                        const summary = await this.summarizeWithGemini(extractedText, customPrompt);
+                        
+                        // 요약문 삽입
+                        await this.insertSummary(summary, activeFile);
+                        new Notice('요약이 성공적으로 삽입되었습니다.');
+                        resolve();
+                    } catch (error) {
+                        new Notice('오류: ' + error.message);
+                        console.error('요약 오류:', error);
+                        resolve();
+                    } finally {
+                        this.hideLoadingIndicator();  // 로딩 인디케이터 제거
+                    }
+                }).open();
+            });
 
         } catch (error) {
             new Notice('오류: ' + error.message);
             console.error('요약 오류:', error);
+            this.hideLoadingIndicator();  // 에러 발생 시에도 로딩 인디케이터 제거
         }
     }
 
@@ -55,26 +108,13 @@ export class SummaryService {
         }
     }
 
-    private async summarizeWithGemini(text: string): Promise<string> {
+    private async summarizeWithGemini(text: string, customPrompt: string | null): Promise<string> {
         if (!this.settings.geminiApiKey) {
             throw new Error('Gemini API 키가 설정되지 않았습니다.');
         }
 
-        const prompt = `You are a deep learning expert. You have received summaries of multiple pages from a long document. You need to create a comprehensive final summary based on these summaries. Please follow these steps:
-
-        Step 1: Extract key keywords and technical terms from all summaries. Bold each keyword and add a brief explanation.
-        Step 2: List the main points from all summaries. Include relevant keywords for each point.
-        Step 3: Elaborate on each point in 5-10 sentences. Use the extracted keywords in your explanations.
-        Step 4: Explain the relationships or connections between the points. Use keywords here as well.
-        Step 5: Briefly discuss the importance or potential impact of this information. Mention why the key keywords are important.
-
-        The final summary should faithfully reflect the essence of the entire document while being easy to read and informative.
-        Avoid vague or general statements and provide specific, substantial information.
-        Be sure to include and emphasize specific terms and content cited from other papers!
-        Bold these keywords and add a brief explanation if possible.
-        At the end of the summary, list all the main keywords once again.
-
-        Text to summarize: ${text}`;
+        const prompt = customPrompt || this.DEFAULT_PROMPT;
+        const finalPrompt = `${prompt}\n\nText to summarize: ${text}`;
 
         const response = await requestUrl({
             url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${this.settings.geminiApiKey}`,
@@ -85,7 +125,7 @@ export class SummaryService {
             body: JSON.stringify({
                 contents: [{
                     parts: [{
-                        text: prompt
+                        text: finalPrompt
                     }]
                 }]
             })
