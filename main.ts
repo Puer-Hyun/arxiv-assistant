@@ -1,5 +1,6 @@
 import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, TFile } from 'obsidian';
 import { PDFExtractor } from './src/pdfExtractor';
+import { ArxivMetadataService } from './src/services/arxivMetadataService';
 
 // Remember to rename these classes and interfaces!
 
@@ -14,10 +15,12 @@ const DEFAULT_SETTINGS: MyPluginSettings = {
 export default class MyPlugin extends Plugin {
 	settings: MyPluginSettings;
 	pdfExtractor: PDFExtractor;
+	arxivMetadataService: ArxivMetadataService;
 
 	async onload() {
 		await this.loadSettings();
 		this.pdfExtractor = new PDFExtractor();
+		this.arxivMetadataService = new ArxivMetadataService(this.app);
 
 		// This creates an icon in the left ribbon.
 		const ribbonIconEl = this.addRibbonIcon('dice', 'Sample Plugin', (evt: MouseEvent) => {
@@ -123,6 +126,15 @@ export default class MyPlugin extends Plugin {
 					new Notice('PDF 처리 중 오류가 발생했습니다.');
 					console.error('PDF 처리 오류:', error);
 				}
+			}
+		});
+
+		// Arxiv 메타데이터 명령어 추가
+		this.addCommand({
+			id: 'fetch-arxiv-metadata',
+			name: 'Arxiv 메타데이터 가져오기',
+			callback: () => {
+				this.arxivMetadataService.fetchMetadataFromClipboard();
 			}
 		});
 	}
