@@ -1,6 +1,6 @@
 {
-	"id": "arxiv-assistant",
-	"name": "Arxiv Assistant",
+	"id": "arxiv-assistant",	
+	"name": "ArXiv Paper Assistant",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
 	"description": "Arxiv paper management assistant with metadata fetching, PDF downloading, and AI-powered summarization features",
