@@ -19,41 +19,27 @@ export class PromptInputModal extends Modal {
         const headerEl = contentEl.createDiv('modal-header');
         headerEl.createEl('h2', { text: 'Customize Summary Prompt' });
 
-        const promptContainer = contentEl.createDiv('modal-content');
-        promptContainer.style.padding = '0 25px';
+        const promptContainer = contentEl.createDiv('modal-content prompt-container');
 
         const descEl = promptContainer.createEl('p', {
             text: 'Enter your instructions for the AI summarizer',
-            cls: 'setting-item-description'
+            cls: 'setting-item-description prompt-description'
         });
-        descEl.style.marginBottom = '12px';
 
         const textAreaContainer = promptContainer.createDiv('textarea-container');
-        textAreaContainer.style.marginBottom = '20px';
 
         const textArea = textAreaContainer.createEl('textarea', {
             cls: 'prompt-textarea'
         });
         textArea.value = this.prompt;
-        textArea.style.width = '100%';
-        textArea.style.height = '400px';
-        textArea.style.fontSize = '14px';
-        textArea.style.lineHeight = '1.5';
-        textArea.style.padding = '10px';
-        textArea.style.border = 'var(--background-modifier-border) 1px solid';
-        textArea.style.borderRadius = '4px';
-        textArea.style.backgroundColor = 'var(--background-primary)';
-        textArea.style.color = 'var(--text-normal)';
         textArea.addEventListener('input', (e) => {
-            this.prompt = (e.target as HTMLTextAreaElement).value;
+            const target = e.target;
+            if (target instanceof HTMLTextAreaElement) {
+                this.prompt = target.value;
+            }
         });
 
         const buttonContainer = contentEl.createDiv('modal-button-container');
-        buttonContainer.style.padding = '15px 25px';
-        buttonContainer.style.borderTop = '1px solid var(--background-modifier-border)';
-        buttonContainer.style.display = 'flex';
-        buttonContainer.style.justifyContent = 'flex-end';
-        buttonContainer.style.gap = '10px';
 
         const defaultButton = buttonContainer.createEl('button', {
             text: 'Use Default',
