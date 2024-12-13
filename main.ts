@@ -46,12 +46,11 @@ export default class ArxivAssistantPlugin extends Plugin {
 						const newFileName = '2404.16260v1-extracted.md';
 						const existingFile = this.app.vault.getAbstractFileByPath(newFileName);
 						
-						if (existingFile) {
-							await this.app.vault.modify(existingFile as TFile, extractedText);
+						if (existingFile instanceof TFile) {
+							await this.app.vault.modify(existingFile, extractedText);
 							new Notice('Existing file has been updated');
 						} else {
-							await this.app.vault.create(newFileName, extractedText);
-							new Notice('New file has been created');
+							new Notice('Invalid file type');
 						}
 					} else {
 						new Notice('Invalid file');
