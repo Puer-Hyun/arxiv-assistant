@@ -94,7 +94,7 @@ export default class ArxivAssistantPlugin extends Plugin {
 		// PDF 처리 명령어 추가
 		this.addCommand({
 			id: 'process-pdf-to-markdown',
-			name: 'PDF를 마크다운으로 변환',
+			name: 'Convert PDF to Markdown',
 			callback: () => this.processPDF()
 		});
 
@@ -115,7 +115,7 @@ export default class ArxivAssistantPlugin extends Plugin {
 
 	async processPDF() {
 		if (!this.settings.obsidianImagePath) {
-			new Notice('이미지 저장 경로를 먼저 설정해주세요.');
+			new Notice('Please set the image storage path first.');
 			return;
 		}
 
@@ -127,7 +127,7 @@ export default class ArxivAssistantPlugin extends Plugin {
 			try {
 				const file = this.app.vault.getAbstractFileByPath(pdfPath);
 				if (!(file instanceof TFile)) {
-					throw new Error('PDF 파일을 찾을 수 없습니다.');
+					throw new Error('PDF file not found.');
 				}
 
 				// vault 경로 가져오기
@@ -142,7 +142,7 @@ export default class ArxivAssistantPlugin extends Plugin {
 				formData.append('path_client_image_path', this.settings.obsidianImagePath);
 				formData.append('path_client_obsidian_vault_path', vaultPath);
 
-				new Notice('PDF 처리 중...');
+				new Notice('Processing PDF...');
 
 				const response = await fetch('http://localhost:9999/process-pdf', {
 					method: 'POST',
@@ -150,7 +150,7 @@ export default class ArxivAssistantPlugin extends Plugin {
 				});
 
 				if (!response.ok) {
-					throw new Error(`서버 오류: ${response.status}`);
+					throw new Error(`Server error: ${response.status}`);
 				}
 
 				const result = await response.json();
@@ -180,10 +180,10 @@ export default class ArxivAssistantPlugin extends Plugin {
 					);
 				}
 				
-				new Notice('PDF 처리가 완료되었습니다! 마크다운 내용이 클립보드에 복사되었습니다.');
+				new Notice('PDF processing completed! The markdown content has been copied to the clipboard.');
 			} catch (error) {
-				console.error('PDF 처리 오류:', error);
-				new Notice(`PDF 처리 실패: ${error.message}`);
+				console.error('PDF processing error:', error);
+				new Notice(`PDF processing failed: ${error.message}`);
 			}
 		};
 
@@ -233,10 +233,10 @@ class ArxivAssistantSettingTab extends PluginSettingTab {
 
 		// 이미지 저장 경로 설정 추가
 		new Setting(containerEl)
-			.setName('이미지 저장 경로')
-			.setDesc('PDF에서 추출된 이미지가 저장될 경로를 지정하세요')
+			.setName('Image Storage Path')
+			.setDesc('The path where extracted images from PDF will be stored')
 			.addText(text => text
-				.setPlaceholder('예: PDFImages')
+				.setPlaceholder('Example: PDFImages')
 				.setValue(this.plugin.settings.obsidianImagePath)
 				.onChange(async (value) => {
 					this.plugin.settings.obsidianImagePath = value;
