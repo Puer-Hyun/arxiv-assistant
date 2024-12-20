@@ -1,13 +1,15 @@
 export interface PluginSettings {
-    geminiApiKey: string;
     paperPaths: string;
+    geminiApiKey: string;
     translate: boolean;
     targetLanguage: string;
+    obsidianImagePath: string;
 }
 
 export const DEFAULT_SETTINGS: PluginSettings = {
-    geminiApiKey: '',
     paperPaths: '',
+    geminiApiKey: '',
     translate: false,
-    targetLanguage: 'korean'
+    targetLanguage: 'korean',
+    obsidianImagePath: 'PDFImages'
 } 

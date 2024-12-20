@@ -1,9 +1,10 @@
-import { App, Notice, Plugin, PluginSettingTab, Setting, TFile } from 'obsidian';
+import { App, Notice, Plugin, PluginSettingTab, Setting, TFile, TFolder, FuzzySuggestModal } from 'obsidian';
 import { PDFExtractor } from './src/services/pdfExtractor';
 import { ArxivMetadataService } from './src/services/arxivMetadataService';
 import { PDFDownloadService } from './src/services/pdfDownloadService';
 import { PluginSettings, DEFAULT_SETTINGS } from './src/types/settings';
 import { SummaryService } from './src/services/summaryService';
+import { PDFSuggestModal } from './src/components/PDFSuggestModal';
 
 export default class ArxivAssistantPlugin extends Plugin {
 	settings: PluginSettings;
@@ -18,6 +19,7 @@ export default class ArxivAssistantPlugin extends Plugin {
 		this.arxivMetadataService = new ArxivMetadataService(this.app);
 		this.pdfDownloadService = new PDFDownloadService(this.app, this.settings);
 		this.summaryService = new SummaryService(this.app, this.settings);
+		
 
 		// 리본 아이콘 추가
 		const ribbonIconEl = this.addRibbonIcon('book', 'Arxiv Assistant', (evt: MouseEvent) => {
@@ -89,6 +91,13 @@ export default class ArxivAssistantPlugin extends Plugin {
 			}
 		});
 
+		// PDF 처리 명령어 추가
+		this.addCommand({
+			id: 'process-pdf-to-markdown',
+			name: 'PDF를 마크다운으로 변환',
+			callback: () => this.processPDF()
+		});
+
 		// 설정 탭 추가
 		this.addSettingTab(new ArxivAssistantSettingTab(this.app, this));
 	}
@@ -103,6 +112,111 @@ export default class ArxivAssistantPlugin extends Plugin {
 	async saveSettings() {
 		await this.saveData(this.settings);
 	}
+
+	async processPDF() {
+		if (!this.settings.obsidianImagePath) {
+			new Notice('이미지 저장 경로를 먼저 설정해주세요.');
+			return;
+		}
+
+		// PDF 파일 선택을 위한 FuzzyModal
+		const pdfFiles = this.getPDFFiles();
+		const modal = new PDFSuggestModal(this.app, pdfFiles);
+		
+		modal.onChoose = async (pdfPath: string) => {
+			try {
+				const file = this.app.vault.getAbstractFileByPath(pdfPath);
+				if (!(file instanceof TFile)) {
+					throw new Error('PDF 파일을 찾을 수 없습니다.');
+				}
+
+				// vault 경로 가져오기
+				const vaultPath = (this.app.vault.adapter as any).basePath;
+
+				const formData = new FormData();
+				const pdfFile = await this.app.vault.readBinary(file);
+				const fileName = file.name;
+				
+				// FormData 설정
+				formData.append('pdf_file', new Blob([pdfFile], { type: 'application/pdf' }), fileName);
+				formData.append('path_client_image_path', this.settings.obsidianImagePath);
+				formData.append('path_client_obsidian_vault_path', vaultPath);
+
+				new Notice('PDF 처리 중...');
+
+				const response = await fetch('http://localhost:9999/process-pdf', {
+					method: 'POST',
+					body: formData
+				});
+
+				if (!response.ok) {
+					throw new Error(`서버 오류: ${response.status}`);
+				}
+
+				const result = await response.json();
+
+				// 이미지 저장
+				for (const [imgName, imgBase64] of Object.entries(result.images)) {
+					const imgData = this.base64ToArrayBuffer(imgBase64 as string);
+					const imagePath = `${this.settings.obsidianImagePath}/${imgName}`;
+					
+					// 이미지 디렉토리 생성
+					await this.app.vault.createFolder(
+						this.settings.obsidianImagePath
+					).catch(() => {}); // 이미 존재하는 경우 무시
+					
+					await this.app.vault.createBinary(imagePath, imgData);
+				}
+
+				// 마크다운 내용을 클립보드에 복사
+				await navigator.clipboard.writeText(result.markdown_content);
+				
+				// content_list 저장
+				if (result.content_list) {
+					const contentListPath = `${this.settings.obsidianImagePath}/${fileName.replace('.pdf', '_content_list.json')}`;
+					await this.app.vault.create(
+						contentListPath,
+						JSON.stringify(result.content_list, null, 2)
+					);
+				}
+				
+				new Notice('PDF 처리가 완료되었습니다! 마크다운 내용이 클립보드에 복사되었습니다.');
+			} catch (error) {
+				console.error('PDF 처리 오류:', error);
+				new Notice(`PDF 처리 실패: ${error.message}`);
+			}
+		};
+
+		modal.open();
+	}
+
+	private getPDFFiles(): string[] {
+		const files: string[] = [];
+		const vault = this.app.vault;
+		
+		// 재귀적으로 PDF 파일 찾기
+		const searchFiles = (folder: TFolder) => {
+			folder.children.forEach(child => {
+				if (child instanceof TFile && child.extension === 'pdf') {
+					files.push(child.path);
+				} else if (child instanceof TFolder) {
+					searchFiles(child);
+				}
+			});
+		};
+
+		searchFiles(vault.getRoot());
+		return files;
+	}
+
+	private base64ToArrayBuffer(base64: string): ArrayBuffer {
+		const binaryString = window.atob(base64);
+		const bytes = new Uint8Array(binaryString.length);
+		for (let i = 0; i < binaryString.length; i++) {
+			bytes[i] = binaryString.charCodeAt(i);
+		}
+		return bytes.buffer;
+	}
 }
 
 class ArxivAssistantSettingTab extends PluginSettingTab {
@@ -116,6 +230,18 @@ class ArxivAssistantSettingTab extends PluginSettingTab {
 	display(): void {
 		const {containerEl} = this;
 		containerEl.empty();
+
+		// 이미지 저장 경로 설정 추가
+		new Setting(containerEl)
+			.setName('이미지 저장 경로')
+			.setDesc('PDF에서 추출된 이미지가 저장될 경로를 지정하세요')
+			.addText(text => text
+				.setPlaceholder('예: PDFImages')
+				.setValue(this.plugin.settings.obsidianImagePath)
+				.onChange(async (value) => {
+					this.plugin.settings.obsidianImagePath = value;
+					await this.plugin.saveSettings();
+				}));
 
 		new Setting(containerEl)
 			.setName('Paper Download Paths')
